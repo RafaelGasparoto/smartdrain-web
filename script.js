@@ -14,16 +14,16 @@ const COR_POR_STATUS = {
 };
 
 const LABEL_EVENTO = {
-  NovoChamado: { texto: "Chamado aberto", icone: "📍" },
-  ChamadoEmAndamento: { texto: "Atendimento iniciado", icone: "🔧" },
+  NovoChamado: { texto: "Chamado aberto", icone: "exclamation-triangle-fill" },
+  ChamadoEmAndamento: { texto: "Atendimento iniciado", icone: "tools" },
   ChamadoValidarManutencao: {
     texto: "Manutenção enviada para validação",
-    icone: "🕓",
+    icone: "hourglass-split",
   },
-  ChamadoFinalizado: { texto: "Chamado finalizado", icone: "✅" },
+  ChamadoFinalizado: { texto: "Chamado finalizado", icone: "check-circle-fill" },
   ChamadoFinalizadoAutomaticamente: {
     texto: "Finalizado automaticamente (sem intervenção técnica)",
-    icone: "⚡",
+    icone: "gear-fill",
   },
 };
 
@@ -188,14 +188,14 @@ function preencherTabela(chamados) {
   chamados.forEach((chamado) => {
     const infoEvento = LABEL_EVENTO[chamado.evento] || {
       texto: chamado.evento,
-      icone: "•",
+      icone: "circle-fill",
     };
 
     const linha = document.createElement("tr");
     linha.innerHTML = `
       <td>${chamado.id}</td>
       <td>${new Date(chamado.timestamp * 1000).toLocaleString("pt-BR")}</td>
-      <td>${infoEvento.icone} ${infoEvento.texto}</td>
+      <td><i class="bi bi-${infoEvento.icone} me-1"></i>${infoEvento.texto}</td>
       <td class="hash-link">${chamado.hashTransacao}</td>
       <td></td>
     `;
@@ -277,11 +277,11 @@ function renderizarDetalheChamado(chamado, historico, hashConsultado) {
     .map((evento) => {
       const info = LABEL_EVENTO[evento.evento] || {
         texto: evento.evento,
-        icone: "•",
+        icone: "circle-fill",
       };
       return `
         <div class="timeline-passo">
-          <div class="timeline-marcador">${info.icone}</div>
+          <div class="timeline-marcador"><i class="bi bi-${info.icone}"></i></div>
           <div class="fw-semibold">${info.texto}</div>
           <div class="text-secondary small">${new Date(
             evento.timestamp * 1000
@@ -296,7 +296,7 @@ function renderizarDetalheChamado(chamado, historico, hashConsultado) {
     chamado.status !== "Concluído"
       ? `
         <div class="timeline-passo pendente">
-          <div class="timeline-marcador">…</div>
+          <div class="timeline-marcador"><i class="bi bi-three-dots"></i></div>
           <div class="fw-semibold text-secondary">Aguardando próxima etapa</div>
         </div>
       `
@@ -304,7 +304,7 @@ function renderizarDetalheChamado(chamado, historico, hashConsultado) {
 
   resultadoAuditoria.innerHTML = `
     <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-success-subtle border border-success mb-3">
-      <span class="fs-5">✅</span>
+      <span class="fs-5 text-success"><i class="bi bi-patch-check-fill"></i></span>
       <div class="flex-grow-1">
         <div class="fw-semibold text-success-emphasis">Verificado on-chain</div>
         <div class="small font-monospace text-truncate" style="max-width: 320px;" title="${hashDestaque}">${hashDestaque}</div>
