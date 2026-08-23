@@ -22,6 +22,10 @@ const LABEL_EVENTO = {
     texto: "Manutenção enviada para validação",
     icone: "hourglass-split",
   },
+  ChamadoReaberto: {
+    texto: "Validação expirou, retornou para em andamento",
+    icone: "arrow-counterclockwise",
+  },
   ChamadoFinalizado: { texto: "Chamado finalizado", icone: "check-circle-fill" },
   ChamadoFinalizadoAutomaticamente: {
     texto: "Finalizado automaticamente (sem intervenção técnica)",
