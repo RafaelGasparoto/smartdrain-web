@@ -13,6 +13,8 @@ const COR_POR_STATUS = {
   Concluído: "#198754",
 };
 
+const COR_SENSOR_NORMAL = "#198754";
+
 const LABEL_EVENTO = {
   NovoChamado: { texto: "Chamado aberto", icone: "exclamation-triangle-fill" },
   ChamadoEmAndamento: { texto: "Atendimento iniciado", icone: "tools" },
@@ -56,42 +58,53 @@ function obterUltimoChamadoPorSensor(chamados) {
     }
   });
 
-  return [...porSensor.values()];
+  return porSensor;
 }
 
-function atualizarMapa(chamados) {
+function atualizarMapa(sensores, chamados) {
   marcadores.forEach((marcador) => mapa.removeLayer(marcador));
   marcadores = [];
 
   const ultimoPorSensor = obterUltimoChamadoPorSensor(chamados);
 
-  ultimoPorSensor.forEach((chamado) => {
-    const sensorNormal = chamado.status === "Concluído";
+  sensores.forEach((sensor) => {
+    const chamado = ultimoPorSensor.get(sensor.id);
+    const temChamadoAtivo = chamado && chamado.status !== "Concluído";
 
-    const marcador = L.circleMarker([chamado.lat, chamado.long], {
+    const marcador = L.circleMarker([sensor.latitude, sensor.longitude], {
       radius: 10,
       color: "#000",
       weight: 1,
-      fillColor: sensorNormal
-        ? COR_POR_STATUS["Concluído"]
-        : COR_POR_STATUS[chamado.status] || "#6c757d",
+      fillColor: temChamadoAtivo
+        ? COR_POR_STATUS[chamado.status] || "#6c757d"
+        : COR_SENSOR_NORMAL,
       fillOpacity: 0.9,
     }).addTo(mapa);
 
-    const conteudoPopup = sensorNormal
-      ? `<strong>Sensor ${chamado.sensorId}</strong><br>Operando normalmente<br>` +
-        `<button class="btn btn-sm btn-outline-secondary mt-2" data-id-chamado="${chamado.id}">Ver último chamado</button>`
-      : `<strong>Chamado #${chamado.id}</strong><br>Sensor ${chamado.sensorId}<br>Status: ${chamado.status}<br>` +
-        `<button class="btn btn-sm btn-primary mt-2" data-id-chamado="${chamado.id}">Ver detalhes</button>`;
+    const botaoHistorico = chamado
+      ? `<button class="btn btn-sm ${
+          temChamadoAtivo ? "btn-primary" : "btn-outline-secondary"
+        } mt-2" data-id-chamado="${chamado.id}">${
+          temChamadoAtivo ? "Ver detalhes" : "Ver último chamado"
+        }</button>`
+      : "";
+
+    const conteudoPopup = temChamadoAtivo
+      ? `<strong>Chamado #${chamado.id}</strong><br>Sensor ${sensor.id}<br>Status: ${chamado.status}<br>${botaoHistorico}`
+      : `<strong>Sensor ${sensor.id}</strong><br>Operando normalmente<br>${botaoHistorico}`;
 
     marcador.bindPopup(conteudoPopup);
 
-    marcador.on("popupopen", () => {
-      const botao = document.querySelector(
-        `[data-id-chamado="${chamado.id}"]`
-      );
-      botao?.addEventListener("click", () => exibirDetalheChamado(chamado.id));
-    });
+    if (chamado) {
+      marcador.on("popupopen", () => {
+        const botao = document.querySelector(
+          `[data-id-chamado="${chamado.id}"]`
+        );
+        botao?.addEventListener("click", () =>
+          exibirDetalheChamado(chamado.id)
+        );
+      });
+    }
 
     marcadores.push(marcador);
   });
@@ -141,17 +154,22 @@ function formatarDuracao(ms) {
 
 async function carregarChamadosCompletos() {
   try {
-    const resposta = await fetch(`${API_URL}/chamados-completos`);
-    const dados = await resposta.json();
+    const [respostaSensores, respostaChamados] = await Promise.all([
+      fetch(`${API_URL}/sensores`),
+      fetch(`${API_URL}/chamados-completos`),
+    ]);
 
-    if (!dados.sucesso) {
+    const dadosSensores = await respostaSensores.json();
+    const dadosChamados = await respostaChamados.json();
+
+    if (!dadosSensores.sucesso || !dadosChamados.sucesso) {
       throw new Error("Resposta inválida do servidor.");
     }
 
-    atualizarMapa(dados.chamados);
-    atualizarMetricas(dados.chamados);
+    atualizarMapa(dadosSensores.sensores, dadosChamados.chamados);
+    atualizarMetricas(dadosChamados.chamados);
   } catch (erro) {
-    console.error("Erro ao carregar chamados completos:", erro);
+    console.error("Erro ao carregar dados do mapa:", erro);
   }
 }
 
