@@ -66,7 +66,7 @@
 
     .timeline {
       position: relative;
-      padding-left: 1.75rem;
+      padding: 1rem 1rem 0 3rem;
     }
 
     .timeline-passo {
@@ -114,13 +114,11 @@
       <div>
         <h1 class="h3 mb-0 text-white">Smart Drain Dashboard</h1>
       </div>
-      <a href="./tecnico.html" class="btn btn-sm btn-outline-secondary"
-        >Painel do Técnico →</a
-      >
+      <a href="./tecnico.html" class="btn btn-sm btn-outline-secondary">Painel do Técnico →</a>
     </div>
 
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md-3">
+    <div class="row g-3 mb-4 row-cols-2 row-cols-md-3 row-cols-lg-5">
+      <div class="col">
         <div class="card metrica-card">
           <div class="card-body">
             <div class="text-secondary small">Total de chamados</div>
@@ -128,7 +126,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col">
         <div class="card metrica-card">
           <div class="card-body">
             <div class="text-secondary small">Abertos agora</div>
@@ -136,7 +134,7 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col">
         <div class="card metrica-card">
           <div class="card-body">
             <div class="text-secondary small">Tempo médio até finalização</div>
@@ -144,14 +142,19 @@
           </div>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col">
+        <div class="card metrica-card">
+          <div class="card-body">
+            <div class="text-secondary small">Chamados finalizados</div>
+            <div id="metricaConcluidos" class="metrica-valor text-success">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
         <div class="card metrica-card">
           <div class="card-body">
             <div class="text-secondary small">Finalizados sem intervenção</div>
             <div id="metricaSemIntervencao" class="metrica-valor">—</div>
-            <div class="text-secondary small mt-1">
-              de <span id="metricaConcluidos">0</span> concluídos
-            </div>
           </div>
         </div>
       </div>
@@ -167,7 +170,8 @@
               Andamento</span>
             <span class="legenda-item"><span class="legenda-bolinha" style="background:#0dcaf0"></span>Validar
               Manutenção</span>
-            <span class="legenda-item"><span class="legenda-bolinha" style="background:#198754"></span>Operando normalmente</span>
+            <span class="legenda-item"><span class="legenda-bolinha" style="background:#198754"></span>Operando
+              normalmente</span>
           </div>
         </div>
         <div id="mapa"></div>
