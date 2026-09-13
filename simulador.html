@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Sensores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #121212;
+      color: #f8f9fa;
+    }
+
+    .bg-panel {
+      background: #1f1f1f;
+    }
+
+    .sensor-card {
+      background: #1f1f1f;
+      border: 0;
+      border-radius: 0.75rem;
+    }
+
+    .sensor-card.ativo {
+      box-shadow: 0 0 0 1px #198754 inset;
+    }
+
+    .sensor-card.parado {
+      box-shadow: 0 0 0 1px #3a3a3a inset;
+    }
+
+    .ultimo-sinal {
+      font-size: 0.75rem;
+      color: #adb5bd;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4" style="max-width: 900px;">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h1 class="h3 mb-0 text-white">Simulador de Sensores</h1>
+      <div class="d-flex gap-2">
+        <a href="./tecnico.html" class="btn btn-sm btn-outline-secondary">Painel do Técnico</a>
+        <a href="./index.html" class="btn btn-sm btn-outline-secondary">Dashboard</a>
+      </div>
+    </div>
+
+    <p class="text-secondary">
+      Cada sensor precisa enviar sinal periodicamente. "Iniciar envio" simula o sensor funcionando
+      normalmente; "Parar" simula uma obstrução — depois de alguns segundos sem sinal, a API abre
+      um chamado automaticamente.
+    </p>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span id="statusBroker" class="badge text-bg-secondary">Conectando ao broker...</span>
+      <div class="d-flex gap-2">
+        <button id="botaoIniciarTodos" class="btn btn-sm btn-outline-success">Iniciar todos</button>
+        <button id="botaoPararTodos" class="btn btn-sm btn-outline-danger">Parar todos</button>
+      </div>
+    </div>
+
+    <div id="listaSensores" class="row g-3"></div>
+  </div>
+
+  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+  <script type="module" src="./simulador.js"></script>
+</body>
+
+</html>
