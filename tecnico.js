@@ -1,4 +1,5 @@
 const API_URL = "http://localhost:3000";
+const INTERVALO_ATUALIZACAO_MS = 10000;
 
 // Chave de teste do Hardhat (Account #1) — a mesma do TECNICO_PRIVATE_KEY
 // no .env da API. É pública e serve só pra desenvolvimento local.
@@ -41,6 +42,8 @@ async function carregarChamados() {
 }
 
 function preencherSeletor() {
+  const idSelecionado = seletorChamado.value;
+
   if (!chamados.length) {
     seletorChamado.innerHTML =
       '<option value="">Nenhum chamado aberto</option>';
@@ -54,6 +57,11 @@ function preencherSeletor() {
         `<option value="${c.id}">Chamado #${c.id} — ${c.status} (sensor ${c.sensorId})</option>`
     )
     .join("");
+
+  // Mantém a seleção do técnico entre as atualizações automáticas
+  if (chamados.some((c) => String(c.id) === idSelecionado)) {
+    seletorChamado.value = idSelecionado;
+  }
 
   atualizarDisponibilidadeBotoes(obterChamadoSelecionado());
 }
@@ -129,3 +137,4 @@ function escaparHtml(texto) {
 }
 
 carregarChamados();
+setInterval(carregarChamados, INTERVALO_ATUALIZACAO_MS);

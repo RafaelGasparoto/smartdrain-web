@@ -5,6 +5,7 @@ const tabelaChamados = document.getElementById("tabelaChamados");
 const resultadoAuditoria = document.getElementById("resultadoAuditoria");
 
 const CENTRO_PADRAO = [-24.7212, -53.7428];
+const INTERVALO_ATUALIZACAO_MS = 10000;
 
 const COR_POR_STATUS = {
   Aberto: "#dc3545",
@@ -26,7 +27,10 @@ const LABEL_EVENTO = {
     texto: "Validação expirou, retornou para em andamento",
     icone: "arrow-counterclockwise",
   },
-  ChamadoFinalizado: { texto: "Chamado finalizado", icone: "check-circle-fill" },
+  ChamadoFinalizado: {
+    texto: "Chamado finalizado",
+    icone: "check-circle-fill",
+  },
   ChamadoFinalizadoAutomaticamente: {
     texto: "Finalizado automaticamente (sem intervenção técnica)",
     icone: "gear-fill",
@@ -35,6 +39,8 @@ const LABEL_EVENTO = {
 
 let mapa;
 let marcadores = [];
+let mapaAjustado = false;
+let chamadoEmExibicao = null;
 
 botaoConsultar.addEventListener("click", () => {
   const hash = campoHash.value.trim();
@@ -66,6 +72,10 @@ function obterUltimoChamadoPorSensor(chamados) {
 }
 
 function atualizarMapa(sensores, chamados) {
+  const sensorComPopupAberto = marcadores.find((m) =>
+    m.isPopupOpen(),
+  )?.sensorId;
+
   marcadores.forEach((marcador) => mapa.removeLayer(marcador));
   marcadores = [];
 
@@ -84,6 +94,7 @@ function atualizarMapa(sensores, chamados) {
         : COR_SENSOR_NORMAL,
       fillOpacity: 0.9,
     }).addTo(mapa);
+    marcador.sensorId = sensor.id;
 
     const botaoHistorico = chamado
       ? `<button class="btn btn-sm ${
@@ -102,10 +113,10 @@ function atualizarMapa(sensores, chamados) {
     if (chamado) {
       marcador.on("popupopen", () => {
         const botao = document.querySelector(
-          `[data-id-chamado="${chamado.id}"]`
+          `[data-id-chamado="${chamado.id}"]`,
         );
         botao?.addEventListener("click", () =>
-          exibirDetalheChamado(chamado.id)
+          exibirDetalheChamado(chamado.id),
         );
       });
     }
@@ -113,10 +124,13 @@ function atualizarMapa(sensores, chamados) {
     marcadores.push(marcador);
   });
 
-  if (marcadores.length) {
+  if (marcadores.length && !mapaAjustado) {
     const grupo = L.featureGroup(marcadores);
     mapa.fitBounds(grupo.getBounds(), { maxZoom: 15, padding: [30, 30] });
+    mapaAjustado = true;
   }
+
+  marcadores.find((m) => m.sensorId === sensorComPopupAberto)?.openPopup();
 }
 
 function atualizarMetricas(chamados) {
@@ -124,7 +138,7 @@ function atualizarMetricas(chamados) {
   const abertos = chamados.filter((c) => c.status !== "Concluído").length;
   const concluidos = chamados.filter((c) => c.status === "Concluído");
   const semIntervencao = concluidos.filter(
-    (c) => c.finalizadoSemIntervencao
+    (c) => c.finalizadoSemIntervencao,
   ).length;
 
   let tempoMedioTexto = "—";
@@ -132,7 +146,7 @@ function atualizarMetricas(chamados) {
     const mediaMs =
       concluidos.reduce(
         (soma, c) => soma + (c.dataFechamento - c.dataAbertura),
-        0
+        0,
       ) / concluidos.length;
     tempoMedioTexto = formatarDuracao(mediaMs);
   }
@@ -140,10 +154,8 @@ function atualizarMetricas(chamados) {
   document.getElementById("metricaTotal").textContent = total;
   document.getElementById("metricaAbertos").textContent = abertos;
   document.getElementById("metricaTempoMedio").textContent = tempoMedioTexto;
-  document.getElementById("metricaSemIntervencao").textContent =
-    semIntervencao;
-  document.getElementById("metricaConcluidos").textContent =
-    concluidos.length;
+  document.getElementById("metricaSemIntervencao").textContent = semIntervencao;
+  document.getElementById("metricaConcluidos").textContent = concluidos.length;
 }
 
 function formatarDuracao(ms) {
@@ -237,6 +249,7 @@ function preencherTabela(chamados) {
 }
 
 async function consultarAuditoria(hash) {
+  chamadoEmExibicao = null;
   exibirMensagemAuditoria("Carregando auditoria...");
 
   try {
@@ -260,8 +273,15 @@ async function consultarAuditoria(hash) {
   }
 }
 
-async function exibirDetalheChamado(idChamado, hashConsultado) {
-  exibirMensagemAuditoria("Carregando detalhes do chamado...");
+async function exibirDetalheChamado(
+  idChamado,
+  hashConsultado,
+  silencioso = false,
+) {
+  if (!silencioso) {
+    chamadoEmExibicao = null;
+    exibirMensagemAuditoria("Carregando detalhes do chamado...");
+  }
 
   try {
     const [respostaChamado, respostaHistorico] = await Promise.all([
@@ -279,19 +299,20 @@ async function exibirDetalheChamado(idChamado, hashConsultado) {
     renderizarDetalheChamado(
       dadosChamado.chamado,
       dadosHistorico.historico,
-      hashConsultado
+      hashConsultado,
     );
+    chamadoEmExibicao = { id: idChamado, hash: hashConsultado };
   } catch (erro) {
-    exibirMensagemAuditoria(`Erro ao carregar chamado: ${erro}`);
+    if (!silencioso) {
+      exibirMensagemAuditoria(`Erro ao carregar chamado: ${erro}`);
+    }
     console.error("Erro ao carregar chamado:", erro);
   }
 }
 
 function renderizarDetalheChamado(chamado, historico, hashConsultado) {
   const hashDestaque =
-    hashConsultado ||
-    historico[historico.length - 1]?.hashTransacao ||
-    "";
+    hashConsultado || historico[historico.length - 1]?.hashTransacao || "";
 
   const idBotaoCopiar = `copiar-${Math.random().toString(36).slice(2)}`;
 
@@ -306,7 +327,7 @@ function renderizarDetalheChamado(chamado, historico, hashConsultado) {
           <div class="timeline-marcador"><i class="bi bi-${info.icone}"></i></div>
           <div class="fw-semibold">${info.texto}</div>
           <div class="text-secondary small">${new Date(
-            evento.timestamp * 1000
+            evento.timestamp * 1000,
           ).toLocaleString("pt-BR")}</div>
           <div class="timeline-hash">hash: ${evento.hashTransacao}</div>
         </div>
@@ -349,7 +370,7 @@ function renderizarDetalheChamado(chamado, historico, hashConsultado) {
   document
     .getElementById(idBotaoCopiar)
     .addEventListener("click", (evento) =>
-      copiarTexto(hashDestaque, evento.currentTarget)
+      copiarTexto(hashDestaque, evento.currentTarget),
     );
 }
 
@@ -376,6 +397,15 @@ async function copiarTexto(texto, botao) {
   }
 }
 
+function atualizarTela() {
+  carregarChamadosCompletos();
+  carregarDados();
+
+  if (chamadoEmExibicao) {
+    exibirDetalheChamado(chamadoEmExibicao.id, chamadoEmExibicao.hash, true);
+  }
+}
+
 inicializarMapa();
-carregarChamadosCompletos();
-carregarDados();
+atualizarTela();
+setInterval(atualizarTela, INTERVALO_ATUALIZACAO_MS);
