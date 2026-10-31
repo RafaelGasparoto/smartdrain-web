@@ -11,6 +11,27 @@ const botaoPararTodos = document.getElementById("botaoPararTodos");
 const estadoPorSensor = new Map();
 let cliente = null;
 
+// Timers num Web Worker não são limitados quando a aba fica em segundo plano
+// (na thread principal o navegador reduz o setInterval pra até 1x por minuto)
+const relogio = new Worker(
+  URL.createObjectURL(
+    new Blob(
+      [
+        `const intervalos = new Map();
+        onmessage = ({ data }) => {
+          clearInterval(intervalos.get(data.id));
+          intervalos.delete(data.id);
+          if (data.acao === "iniciar") {
+            intervalos.set(data.id, setInterval(() => postMessage(data.id), data.intervaloMs));
+          }
+        };`,
+      ],
+      { type: "text/javascript" }
+    )
+  )
+);
+relogio.onmessage = ({ data: sensorId }) => enviarSinal(sensorId);
+
 botaoIniciarTodos.addEventListener("click", () => {
   estadoPorSensor.forEach((estado, id) => iniciarEnvio(id));
 });
@@ -54,7 +75,7 @@ async function carregarSensores() {
     }
 
     dados.sensores.forEach((sensor) => {
-      estadoPorSensor.set(sensor.id, { ativo: false, intervalo: null, ultimoEnvio: null });
+      estadoPorSensor.set(sensor.id, { ativo: false, ultimoEnvio: null });
     });
 
     renderizarSensores(dados.sensores);
@@ -122,7 +143,7 @@ function iniciarEnvio(sensorId) {
 
   estado.ativo = true;
   enviarSinal(sensorId);
-  estado.intervalo = setInterval(() => enviarSinal(sensorId), INTERVALO_ENVIO_MS);
+  relogio.postMessage({ acao: "iniciar", id: sensorId, intervaloMs: INTERVALO_ENVIO_MS });
 
   atualizarCard(sensorId);
 }
@@ -134,8 +155,7 @@ function pararEnvio(sensorId) {
   }
 
   estado.ativo = false;
-  clearInterval(estado.intervalo);
-  estado.intervalo = null;
+  relogio.postMessage({ acao: "parar", id: sensorId });
 
   atualizarCard(sensorId);
 }
